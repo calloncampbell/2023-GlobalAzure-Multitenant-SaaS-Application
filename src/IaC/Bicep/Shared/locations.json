@@ -1,0 +1,10 @@
+{
+    "shortForm": {
+        "CanadaCentral": "cnc",
+        "CanadaEast": "cne"
+    },
+    "longForm": {
+        "CanadaCentral": "Canada Central",
+        "CanadaEast": "Canada East"
+    }
+}

@@ -1,0 +1,10 @@
+### Welcome
+GET http://localhost:7089/api/Welcome
+
+
+### Get Orders
+GET http://localhost:7089/api/GetOrders?customerid=101
+
+
+###
+POST http://localhost:7089/api/NewOrder

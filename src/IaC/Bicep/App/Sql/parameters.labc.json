@@ -1,0 +1,69 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "envType": {
+            "value": "lab"
+        },
+        "envLabel": {
+            "value": "LabC"
+        },
+        "envSlot": {
+            "value": "labc"
+        },
+        "databaseInstanceNames": {
+            "value": [
+                "tenant-catalog",
+                "100",
+                "101",
+                "102",
+                "103",
+                "104",
+                "105",
+                "demos"
+            ]
+        },
+        "sqlAdministratorLogin": {
+            "value": "sqladmin"
+        },
+        "sqlAdministratorPassword": {
+            "value": "P@ssw0rd1"
+        },
+        "sqlepInstanceId":{
+            "value": "001"
+        },
+        "sqlepSkuName":{
+            "value": "GP_Gen5"
+        },
+        "sqlepSkuTier":{
+            "value": "GeneralPurpose"
+        },
+        "sqlepSkuFamily":{
+            "value": "Gen5"
+        },
+        "sqlepSkuCapacity":{
+            "value": 2
+        },
+        "sqldbSkuName":{
+            "value": "ElasticPool"
+        },
+        "sqldbSkuTier":{
+            "value": "GeneralPurpose"
+        },
+        "sqldbSkuCapacity":{
+            "value": 0
+        },
+        "sqldbPropertyMaxSizeBytes": {
+            "value": 268435456000
+        },
+        "sqldbPropertyZoneRedundant": {
+            "value": false
+        },
+        "sqldbPropertyReadScale": {
+            "value": "Disabled"
+        },
+        "sqldbPropertyRequestedBackupStorageRedundancy": {
+            "value": "Local"
+        }
+    }
+}

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ElasticShardSqlUtil": {
+      "commandName": "Project",
+      "commandLineArgs": "shard add --tenants 200 201 --tenant-type sharded-multi-tenant --database-name demos"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+	<Company></Company>
+	<Description></Description>
+	<Copyright>Copyright © 2023</Copyright>
+	<AssemblyVersion>1.0.1.0</AssemblyVersion>
+	<Product>Elastic Shard SQL Utility</Product>
+	<Authors></Authors>
+	<Version>1.0.1</Version>
+	<InformationalVersion>Version 1.0.1</InformationalVersion>
+	<FileVersion>1.0.1.0</FileVersion>
+	<PackageReleaseNotes>
+		This is the initial release of the Elastic Shard SQL Utility.
+	</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.Azure.SqlDatabase.ElasticScale.Client" Version="2.3.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
+	<PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+	<PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+	<PackageReference Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22272.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.1" />	  
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="InitializeShard.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
