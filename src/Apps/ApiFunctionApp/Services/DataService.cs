@@ -39,7 +39,8 @@ namespace ApiFunctionApp.Services
             {
                 await _azureClient.AddCustomerAsync(new Customer { CustomerId = orderData.CustomerId, Name = "Test Customer", RegionId = 1 });
             }
-            return await _azureClient.AddOrderAsync(orderData);
+            var order = await _azureClient.AddOrderAsync(orderData);
+            return order;
         }
 
         public async Task<IEnumerable<Order>> GetOrdersAsync(int customerId)
