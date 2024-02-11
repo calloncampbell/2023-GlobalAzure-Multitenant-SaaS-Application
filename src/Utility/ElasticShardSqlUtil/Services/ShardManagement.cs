@@ -57,6 +57,10 @@ namespace ElasticShardSqlUtil.Services
             {
                 GetShardMapStatus();
             }
+            else if (options.Action == ShardMapManagerActions.Cleanup)
+            {
+                CleanupShardsAction();
+            }
             else
             {
                 ConsoleUtils.WriteWarning($"Shard Map Manager action is '{options.Action}' not supported.");
@@ -77,7 +81,7 @@ namespace ElasticShardSqlUtil.Services
             // Check catalog database exists
             if (!SqlDatabaseUtils.DatabaseExists(ConfigurationUtils.ShardMapManagerServerName, ConfigurationUtils.ShardMapManagerDatabaseName))
             {
-                ConsoleUtils.WriteError($"Failed to initialize shard map manager from '{ConfigurationUtils.ShardMapManagerDatabaseName}' database. Check the configuration file for the correct database name and ensure the catalog is initialized. If the database needs to be created, use the bicep script.");
+                ConsoleUtils.WriteError($"Failed to initialize shard map manager from '{ConfigurationUtils.ShardMapManagerDatabaseName}' database. Check the configuration file for the correct database name and ensure the catalog is initialized. If the database needs to be created, use the Azure portal or any IaC scripts.");
                 return;
             }
 
@@ -108,7 +112,6 @@ namespace ElasticShardSqlUtil.Services
             ListShardMap<int> shardMap = ShardManagementUtils.TryGetShardMapListings(s_shardMapManager);
             if (shardMap == null)
             {
-                // TODO
                 return;
             }
 
@@ -171,9 +174,7 @@ namespace ElasticShardSqlUtil.Services
             else
             {
                 throw new Exception("Tenant type not supported. Try again with one of the supported types.");
-            }
-
-                     
+            }                     
         }
 
         /// <summary>
@@ -198,19 +199,39 @@ namespace ElasticShardSqlUtil.Services
                 // Check that the database exists
                 if (!SqlDatabaseUtils.DatabaseExists(ConfigurationUtils.ShardMapManagerServerName, databaseName))
                 {
-                    ConsoleUtils.WriteError($"Failed to initialize shard map manager from '{ConfigurationUtils.ShardMapManagerDatabaseName}' database. Check the configuration file for the correct database name and ensure the catalog is initialized. If the database needs to be created, use the bicep script.");
+                    ConsoleUtils.WriteError($"Failed to initialize shard map manager from '{ConfigurationUtils.ShardMapManagerDatabaseName}' database. Check the configuration file for the correct database name and ensure the catalog is initialized. If the database needs to be created, use the Azure portal or any IaC scripts.");
                     continue;
                 }
 
                 // Add it to the shard map
                 ShardLocation shardLocation = new ShardLocation(ConfigurationUtils.ShardMapManagerServerName, databaseName);
-                var shard = ShardManagementUtils.CreateShard(shardMap, shardLocation);
-                if (shard != null)
+                var shard = ShardManagementUtils.GetShard(shardMap, shardLocation);
+                if (shard is null)
                 {
-                    // Create a mapping to that shard.
-                    PointMapping<int> mappingForNewShard = shardMap.CreatePointMapping(id, shard);
+                    shard = ShardManagementUtils.CreateShard(shardMap, shardLocation);
+                }
+
+                if (shard is not null)
+                {
+                    var pointMapping = shardMap.GetMappings().FirstOrDefault(m => m.Value == id);
+                    if (pointMapping != null && pointMapping.Value == id)
+                    {
+                        ConsoleUtils.WriteWarning($"Tenant '{id}' already exists in shard '{shard.Location.Database}'");
+                    }
+                    else
+                    {
+                        // Create a mapping to that shard.
+                        PointMapping<int> mappingForNewShard = shardMap.CreatePointMapping(id, shard);
+                    }
 
                     ConsoleUtils.WriteSuccess($"Point mapping created for tenant '{id}' in shard '{shard.Location.Database}'");
+                }
+
+                if (!string.IsNullOrEmpty(options.File))
+                {
+                    // Apply SQL schema to new shard.
+                    ConsoleUtils.WriteMessage("Processing SQL script against database {0}...", shard.Location.Database);
+                    ShardManagementUtils.ApplySqlSchemaToShard(shard.Location.Database, options.File);
                 }
             }
         }
@@ -239,7 +260,7 @@ namespace ElasticShardSqlUtil.Services
             // Check that the database exists
             if (!SqlDatabaseUtils.DatabaseExists(ConfigurationUtils.ShardMapManagerServerName, databaseName))
             {
-                ConsoleUtils.WriteError($"Failed to initialize shard map manager from '{ConfigurationUtils.ShardMapManagerDatabaseName}' database. Check the configuration file for the correct database name and ensure the catalog is initialized. If the database needs to be created, use the bicep script.");
+                ConsoleUtils.WriteError($"Failed to initialize shard map manager from '{ConfigurationUtils.ShardMapManagerDatabaseName}' database. Check the configuration file for the correct database name and ensure the catalog is initialized. If the database needs to be created, use the Azure portal or any IaC scripts.");
             }
 
             // Add new shard location to list shard map
@@ -265,7 +286,14 @@ namespace ElasticShardSqlUtil.Services
                 PointMapping<int> mappingForNewShard = shardMap.CreatePointMapping(id, shard);
 
                 ConsoleUtils.WriteSuccess($"Point mapping created for tenant '{id}' in shard '{shard.Location.Database}'");
-            }            
+            }
+
+            if (!string.IsNullOrEmpty(options.File))
+            {
+                // Apply SQL schema to new shard.
+                ConsoleUtils.WriteMessage("Processing SQL script against database {0}...", shard.Location.Database);
+                ShardManagementUtils.ApplySqlSchemaToShard(shard.Location.Database, options.File);
+            }
         }
 
         /// <summary>
@@ -320,7 +348,7 @@ namespace ElasticShardSqlUtil.Services
 
             foreach (var id in options.Tenants)
             {
-                ConsoleUtils.WriteInfo($"\nProcessing tenant '{id}'...");
+                ConsoleUtils.WriteInfo($"\nProcessing tenant '{id}' for removal from shard map manager...");
 
                 var pointMapping = shardMap.GetMappings().FirstOrDefault(m => m.Value == id);
                 if (pointMapping != null && pointMapping.Value == id)
@@ -330,10 +358,14 @@ namespace ElasticShardSqlUtil.Services
                     pointMapping = shardMap.UpdateMapping(pointMapping, pointMappingUpdate);
                     Console.WriteLine("\tTenant '{0}' status has been set to 'offline'...", pointMapping.Value);
 
+                    shardMap.DeleteMapping(pointMapping);
+                    Console.WriteLine("\tTenant '{0}' mapping has been removed from the shard map manager'...", pointMapping.Value);
+
+                    ShardManagementUtils.DeleteShard(shardMap, pointMapping.Shard.Location);
+
                     var serverName = pointMapping.Shard.Location.Server;
                     var databaseName = pointMapping.Shard.Location.Database;
 
-                    shardMap.DeleteMapping(pointMapping);
                     Console.WriteLine("\tTenant '{0}' has been deleted from server '{1}', database '{2}'", id, serverName, databaseName);
                 }
                 else
@@ -356,9 +388,8 @@ namespace ElasticShardSqlUtil.Services
             }
 
             ListShardMap<int> shardMap = ShardManagementUtils.TryGetShardMapListings(s_shardMapManager);
-            if (shardMap == null)
+            if (shardMap is null)
             {
-                // TODO
                 return;
             }
 
@@ -375,11 +406,11 @@ namespace ElasticShardSqlUtil.Services
                 foreach (Shard shard in shardMap.GetShards().OrderBy(s => s.Location.Database))
                 {
                     IEnumerable<PointMapping<int>> mappingsOnThisShard = mappingsGroupedByShard[shard];
-                    
+
                     if (mappingsOnThisShard.Any())
                     {
                         string mappingsString = string.Join(", ", mappingsOnThisShard.Select(m => m.Value));
-                        
+
                         ConsoleUtils.WriteMessage("Processing SQL script against database {0}...", shard.Location.Database);
                         ShardManagementUtils.ApplySqlSchemaToShard(shard.Location.Database, options.File);
                     }
@@ -392,6 +423,40 @@ namespace ElasticShardSqlUtil.Services
             else
             {
                 ConsoleUtils.WriteWarning("Shard Map contains no shards");
+            }
+        }
+
+        public void CleanupShardsAction()
+        {
+            ListShardMap<int> shardMap = ShardManagementUtils.TryGetShardMapListings(s_shardMapManager);
+            if (shardMap is null)
+            {
+                // TODO
+                return;
+            }
+
+            // Get all shards
+            IEnumerable<Shard> allShards = shardMap.GetShards();
+            ConsoleUtils.WriteMessage($"Found {allShards.Count()} shards");
+
+            // Get all mappings, grouped by the shard that they are on. We do this all in one go to minimise round trips.
+            ILookup<Shard, PointMapping<int>> mappingsGroupedByShard = shardMap.GetMappings().ToLookup(m => m.Shard);
+
+            if (allShards.Any())
+            {
+                // The shard map contains some shards, so for each shard (sorted by database name)
+                // write out the mappings for that shard
+                foreach (Shard shard in shardMap.GetShards().OrderBy(s => s.Location.Database))
+                {
+                    IEnumerable<PointMapping<int>> mappingsOnThisShard = mappingsGroupedByShard[shard];
+                    ConsoleUtils.WriteMessage($"Shard {shard.Location.Database} has {mappingsOnThisShard.Count()} mappings");
+
+                    if (!mappingsOnThisShard.Any())
+                    {
+                        ConsoleUtils.WriteMessage($"Deleting shard {shard.Location.Database} reference as there are 0 mappings");
+                        ShardManagementUtils.DeleteShard(shardMap, shard.Location);
+                    }
+                }
             }
         }
 

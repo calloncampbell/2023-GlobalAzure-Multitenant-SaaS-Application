@@ -18,12 +18,14 @@ namespace ElasticShardSqlUtil.Utils
         public const string MasterDatabaseName = "master";
 
         /// <summary>
-        /// Test connection to the database
+        /// Returns true if we can connect to the database.
         /// </summary>
-        /// <returns></returns>
         public static bool TryConnectToSqlDatabase()
         {
-            string connectionString = ConfigurationUtils.GetConnectionString(ConfigurationUtils.ShardMapManagerServerName, MasterDatabaseName);
+            string connectionString =
+                ConfigurationUtils.GetConnectionString(
+                    ConfigurationUtils.ShardMapManagerServerName,
+                    MasterDatabaseName);
 
             try
             {
@@ -44,12 +46,6 @@ namespace ElasticShardSqlUtil.Utils
             }
         }
 
-        /// <summary>
-        /// Check if database exists
-        /// </summary>
-        /// <param name="server"></param>
-        /// <param name="db"></param>
-        /// <returns></returns>
         public static bool DatabaseExists(string server, string db)
         {
             using (var connection = new SqlConnection(ConfigurationUtils.GetConnectionString(server, MasterDatabaseName)))
@@ -60,20 +56,14 @@ namespace ElasticShardSqlUtil.Utils
                 cmd.CommandText = "select count(*) from sys.databases where name = @dbname";
                 cmd.Parameters.AddWithValue("@dbname", db);
                 cmd.CommandTimeout = 60;
-                
+
                 int count = Convert.ToInt32(cmd.ExecuteScalar());
-                
+
                 bool exists = count > 0;
                 return exists;
             }
         }
 
-        /// <summary>
-        /// Check if database is online
-        /// </summary>
-        /// <param name="server"></param>
-        /// <param name="db"></param>
-        /// <returns></returns>
         public static bool DatabaseIsOnline(string server, string db)
         {
             using (var connection = new SqlConnection(ConfigurationUtils.GetConnectionString(server, MasterDatabaseName)))
@@ -91,16 +81,16 @@ namespace ElasticShardSqlUtil.Utils
                 return exists;
             }
         }
-        
+
         /// <summary>
         /// Escapes a database name with brackets if it contains special characters.
         /// </summary>
         /// <param name="server"></param>
         /// <param name="db"></param>
-        /// <param name="sqlScript"></param>
-        public static void ExecuteSqlScript(string server, string db, string sqlScript)
+        /// <param name="schemaFile"></param>
+        public static void ExecuteSqlScript(string server, string db, string schemaFile)
         {
-            ConsoleUtils.WriteMessage("Executing script {0}", sqlScript);
+            ConsoleUtils.WriteMessage("Executing script {0}", schemaFile);
 
             //// create sqlConnection and run the script
             //using (var connection = new SqlConnection(ConfigurationUtils.GetConnectionString(server, db)))
@@ -131,62 +121,82 @@ namespace ElasticShardSqlUtil.Utils
             //    }
             //}
 
-            // create sqlConnection and run the script
             using (var connection = new SqlConnection(ConfigurationUtils.GetConnectionString(server, db)))
             {
                 connection.Open();
-                SqlCommand cmd = connection.CreateCommand();
+                //SqlCommand cmd = connection.CreateCommand();
 
                 // Read the commands from the sql script file
-                IEnumerable<string> commands = ReadSqlScript(sqlScript);
+                // IEnumerable<string> commands = ReadSqlScript(schemaFile);
 
-                foreach (string command in commands)
+                // Read the script file
+                string script = File.ReadAllText(schemaFile);
+
+                // Split the script on "GO" statements
+                IEnumerable<string> commandStrings = Regex.Split(script, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+                // Execute each command in the script
+                //foreach (string command in commands)
+                foreach (string commandString in commandStrings)
                 {
-                    if (!string.IsNullOrWhiteSpace(command))
-                    {                        
-                        cmd.CommandText = command;
-                        cmd.CommandTimeout = 60;
-                        cmd.ExecuteNonQuery();
+                    //cmd.CommandText = command;
+                    //cmd.CommandTimeout = 60;
+
+                    //cmd.ExecuteNonQuery();
+                    if (!string.IsNullOrWhiteSpace(commandString))
+                    {
+                        try
+                        {
+                            SqlCommand cmd = connection.CreateCommand();
+                            cmd.CommandText = commandString;
+                            cmd.CommandTimeout = 60;
+
+                            cmd.ExecuteNonQuery();
+                        }
+                        catch (Exception ex)
+                        {
+                            ConsoleUtils.WriteError("Error: {0}", ex.Message);
+                        }
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Reads the SQL script file and returns the commands.
-        /// </summary>
-        /// <param name="scriptFile"></param>
-        /// <returns></returns>
-        private static IEnumerable<string> ReadSqlScript(string scriptFile)
-        {
-            List<string> commands = new List<string>();
-            using (TextReader tr = new StreamReader(scriptFile))
-            {
-                StringBuilder sb = new StringBuilder();
-                string line;
-                while ((line = tr.ReadLine()) != null)
-                {
-                    if (line == "GO")
-                    {
-                        commands.Add(sb.ToString());
-                        sb.Clear();
-                    }
-                    else
-                    {
-                        sb.AppendLine(line);
-                    }
-                }
-            }
+        ///// <summary>
+        ///// Reads the SQL script file and returns the commands.
+        ///// </summary>
+        ///// <param name="scriptFile"></param>
+        ///// <returns></returns>
+        //private static IEnumerable<string> ReadSqlScript(string scriptFile)
+        //{
+        //    List<string> commands = new List<string>();
+        //    using (TextReader tr = new StreamReader(scriptFile))
+        //    {
+        //        StringBuilder sb = new StringBuilder();
+        //        string line;
+        //        while ((line = tr.ReadLine()) != null)
+        //        {
+        //            if (line == "GO")
+        //            {
+        //                commands.Add(sb.ToString());
+        //                sb.Clear();
+        //            }
+        //            else
+        //            {
+        //                sb.AppendLine(line);
+        //            }
+        //        }
+        //    }
 
-            return commands;
-        }
+        //    return commands;
+        //}
 
-        /// <summary>
-        /// Escapes a SQL object name with brackets to prevent SQL injection.
-        /// </summary>
-        private static string BracketEscapeName(string sqlName)
-        {
-            return '[' + sqlName.Replace("]", "]]") + ']';
-        }        
+        ///// <summary>
+        ///// Escapes a SQL object name with brackets to prevent SQL injection.
+        ///// </summary>
+        //private static string BracketEscapeName(string sqlName)
+        //{
+        //    return '[' + sqlName.Replace("]", "]]") + ']';
+        //}        
     }
 }

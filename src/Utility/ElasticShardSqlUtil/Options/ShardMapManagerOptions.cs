@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Azure.SqlDatabase.ElasticScale.ShardManagement.Recovery;
+using System;
 using System.Linq;
 
 namespace ElasticShardSqlUtil.Options
@@ -6,7 +7,8 @@ namespace ElasticShardSqlUtil.Options
     public enum ShardMapManagerActions
     {
         Create,
-        Status
+        Status,
+        Cleanup
     }
     
     public class ShardMapManagerOptions

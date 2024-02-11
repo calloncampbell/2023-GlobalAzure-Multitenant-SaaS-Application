@@ -43,7 +43,7 @@ namespace ElasticShardSqlUtil.Utils
         public static ShardMapManager CreateOrGetShardMapManager(string shardMapManagerConnectionString)
         {
             ConsoleUtils.WriteMessage($"Checking if Shard Map Manager has been created...");
-            
+
             // Get shard map manager database connection string
             // Try to get a reference to the Shard Map Manager in the Shard Map Manager database. If it doesn't already exist, then create it.
             ShardMapManager shardMapManager;
@@ -111,14 +111,14 @@ namespace ElasticShardSqlUtil.Utils
 
             return shardMap;
         }
-        
+
         /// <summary>
         /// Returns them if they have already been added.
         /// </summary>
         public static Shard GetShard(ShardMap shardMap, ShardLocation shardLocation)
         {
             ConsoleUtils.WriteMessage("Checking if shard '{0}' is registered with the shard map manager...", shardLocation);
-                
+
             // Try to get a reference to the Shard
             Shard shard;
             bool shardExists = shardMap.TryGetShard(shardLocation, out shard);
@@ -126,7 +126,7 @@ namespace ElasticShardSqlUtil.Utils
             if (!shardExists)
             {
                 ConsoleUtils.WriteMessage("Shard '{0}' doesn't exist.", shardLocation.Database);
-            }            
+            }
 
             return shard;
         }
@@ -186,12 +186,16 @@ namespace ElasticShardSqlUtil.Utils
         /// <param name="shardLocation"></param>
         public static void DeleteShard(ShardMap shardMap, ShardLocation shardLocation)
         {
-            var shard = GetShard(shardMap, shardLocation);
-            if (shard != null)
+            // Try to get a reference to the Shard
+            Shard shard;
+            bool shardExists = shardMap.TryGetShard(shardLocation, out shard);
+
+            if (shardExists)
             {
                 shardMap.DeleteShard(shard);
+
                 ConsoleUtils.WriteSuccess("Deleted shard '{0}' from the Shard Map", shardLocation.Database);
-            }           
+            }
         }
 
         /// <summary>
@@ -204,8 +208,8 @@ namespace ElasticShardSqlUtil.Utils
             // Apple sql script to shard. The script must be idempotent, in case it was already run on this database
             // and we failed to add it to the shard map previously
             SqlDatabaseUtils.ExecuteSqlScript(ConfigurationUtils.ShardMapManagerServerName, database, sqlScriptFile);
-                
-            ConsoleUtils.WriteSuccess("SQL script successfully applied to shard '{0}' from the Shard Map", database);            
+
+            ConsoleUtils.WriteSuccess("SQL script successfully applied to shard '{0}' from the Shard Map", database);
         }
 
         // could be more useful for getting shard details

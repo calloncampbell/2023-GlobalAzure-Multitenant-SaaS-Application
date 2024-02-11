@@ -24,7 +24,7 @@ namespace ElasticShardSqlUtil
 
             Config = ConfigurationBuilder.Build();
         }
-        
+
         /// <summary>
         /// Gets the server name for the Shard Map Manager database, which contains the shard maps.
         /// </summary>
@@ -46,7 +46,7 @@ namespace ElasticShardSqlUtil
         /// </summary>
         public static string ShardMapName
         {
-            get { return Config["ShardMapName"]; }            
+            get { return Config["ShardMapName"]; }
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace ElasticShardSqlUtil
         public static string ShardDatabaseNameFormat
         {
             get { return Config["ShardDatabaseNameFormat"]; }
-        }            
+        }
 
         /// <summary>
         /// Returns a connection string that can be used to connect to the specified server and database.
@@ -107,7 +107,7 @@ namespace ElasticShardSqlUtil
                 //
                 // Other SqlClient ConnectionString keywords are supported.
 
-                ApplicationName = "ElasticShardSqlUtil",
+                ApplicationName = "DniElasticSqlTool",
                 ConnectTimeout = 30
             };
             return connStr.ToString();

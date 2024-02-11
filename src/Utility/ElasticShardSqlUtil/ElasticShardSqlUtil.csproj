@@ -7,13 +7,13 @@
     <Nullable>disable</Nullable>
 	<Company></Company>
 	<Description></Description>
-	<Copyright>Copyright © 2023</Copyright>
-	<AssemblyVersion>1.0.1.0</AssemblyVersion>
+	<Copyright>Copyright © 2024</Copyright>
+	<AssemblyVersion>1.2.0.0</AssemblyVersion>
 	<Product>Elastic Shard SQL Utility</Product>
 	<Authors></Authors>
-	<Version>1.0.1</Version>
-	<InformationalVersion>Version 1.0.1</InformationalVersion>
-	<FileVersion>1.0.1.0</FileVersion>
+	<Version>1.2.0</Version>
+	<InformationalVersion>Version 1.2.0</InformationalVersion>
+	<FileVersion>1.2.0.0</FileVersion>
 	<PackageReleaseNotes>
 		This is the initial release of the Elastic Shard SQL Utility.
 	</PackageReleaseNotes>
